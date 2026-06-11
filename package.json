@@ -1,0 +1,29 @@
+{
+  "name": "csc-cli",
+  "version": "0.1.0",
+  "description": "One-command spec-kit bootstrapper: specify init + extensions + MCP setup for Claude Code and Codex",
+  "license": "MIT",
+  "author": "Christoph Schwarz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/schwarz-christoph/spec-kit-csc-extension.git"
+  },
+  "type": "module",
+  "bin": {
+    "csc": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  }
+}

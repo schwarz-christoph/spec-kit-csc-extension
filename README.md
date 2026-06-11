@@ -17,6 +17,42 @@ it reads and writes is a **spec-kit artifact** (`spec.md`, `plan.md`, `research.
 > **Upgrading from 0.1.x?** This extension was previously published with id `grill`. Remove the old
 > extension and re-add it as `csc` (one-liner above).
 
+## csc CLI — one-command project bootstrap
+
+This repo also ships **`csc`**, a small zero-dependency CLI (TypeScript/Node >= 18) that replaces
+the manual `specify init` + extension install + MCP setup dance for **Claude Code** and **Codex**:
+
+```bash
+npm install -g github:schwarz-christoph/spec-kit-csc-extension
+csc init my-project --ai both
+```
+
+(or `curl -fsSL https://raw.githubusercontent.com/schwarz-christoph/spec-kit-csc-extension/main/install-cli.sh | bash`)
+
+One `csc init` runs `specify init` (falling back to `uvx --from git+…spec-kit.git` when `specify`
+is not on PATH), installs the configured spec-kit extensions — by default this extension plus
+[spec-kit-brownfield](https://github.com/Quratulain-bilal/spec-kit-brownfield),
+[superspec](https://github.com/WangX0111/superspec), and
+[spec-kit-agent-assign](https://github.com/xymelon/spec-kit-agent-assign) — writes your MCP servers
+into the right place per agent (`.mcp.json` for Claude Code, `~/.codex/config.toml` for Codex), and
+runs your post-init hooks.
+
+Everything is configurable on the fly via flags (`--ai`, `--ext`, `--no-ext`, `--no-mcp`, …) or the
+persistent config at `~/.config/csc/config.json`:
+
+```bash
+csc add <name|url|zip|path>      # install one extension into an existing project
+csc ext add|remove|list          # manage the extension set
+csc mcp add|remove|apply|list    # manage MCP servers (stdio + remote)
+csc config set|get|edit          # tweak defaults, hooks, sources
+csc self update                  # reinstall from this repo
+```
+
+Extensions can be git URLs, GitHub zip archives, or local paths; `extension.yml` manifests are
+honoured (declared command names, templates, extension id), and for Codex plain commands are
+wrapped into `.agents/skills/<name>/SKILL.md` entries automatically. Run `csc --help` for the full
+reference. CLI sources live in [`src/`](src/); build with `npm install && npm run build`.
+
 ## Commands
 
 | Command | What it does | Reads | Writes |
