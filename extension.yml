@@ -5,7 +5,8 @@ extension:
   name: "Spec Kit Grill"
   version: "0.1.0"
   description: "Relentless grilling session that stress-tests the active feature against the constitution and spec-kit artifacts, and writes resolved decisions back inline"
-  author: "CAPTRON"
+  author: "schwarz-christoph"
+  repository: "https://github.com/schwarz-christoph/spec-kit-csc-extension"
   license: "MIT"
 
 requires:

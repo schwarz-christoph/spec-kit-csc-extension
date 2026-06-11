@@ -110,7 +110,6 @@ accepted exceptions → `plan.md` Constitution Check.
   without a recorded exception or a proposed amendment.
 - **Preserve each artifact's template headings and structure** (see `.specify/templates/`). Add to
   sections; don't restructure them.
-- **Spell `CAPTRON` in uppercase**, always.
 - **Don't duplicate sibling skills.** Don't generate `tasks.md` (that's `/speckit-tasks`) and don't
   emit the full read-only consistency report (that's `/speckit-analyze`).
 

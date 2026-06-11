@@ -1,6 +1,15 @@
 # spec-kit-csc-extension
 
-A [GitHub Spec Kit](https://github.com/github/spec-kit) extension by CAPTRON that adds the
+[![Spec Kit Extension](https://img.shields.io/badge/Spec%20Kit-extension-blueviolet?logo=github)](https://github.github.com/spec-kit/reference/extensions.html)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)](extension.yml)
+[![Command](https://img.shields.io/badge/command-%2Fspeckit--grill-success)](commands/speckit-grill.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+```bash
+specify extension add grill --from https://github.com/schwarz-christoph/spec-kit-csc-extension.git
+```
+
+A [GitHub Spec Kit](https://github.com/github/spec-kit) extension that adds the
 **`/speckit-grill`** command: a relentless, unbounded grilling session that stress-tests the active
 feature against the project constitution and its spec-kit artifacts (`spec.md`, `plan.md`,
 `research.md`), sharpens the ubiquitous language, and writes resolved decisions back into those
@@ -37,6 +46,7 @@ skills/
     SKILL.md                        # Claude Code skill (canonical instructions)
     ARTIFACT-MAP.md                 # where each kind of resolved decision is written back
 install.sh                          # manual installer for projects without `specify extension`
+NOTICE                              # upstream attribution (MIT, Matt Pocock)
 ```
 
 `skills/speckit-grill/` is the canonical source; `commands/speckit-grill.md` is the same content
@@ -48,11 +58,7 @@ the other in sync.
 
 ### Via the specify CLI (spec-kit with extension support)
 
-```bash
-specify extension add grill --from <archive-or-repo-url-of-this-extension>
-```
-
-Or, for local development from a checkout of this repo:
+Use the one-liner at the top of this README. For local development from a checkout of this repo:
 
 ```bash
 specify extension add grill --dev /path/to/spec-kit-csc-extension
@@ -85,3 +91,10 @@ or just ask: *"grill me on this spec"*, *"stress-test the plan against the const
   `scripts/bash/check-prerequisites.sh`; the command falls back to `.specify/feature.json` when the
   script is unavailable).
 - An active feature with at least a `spec.md`.
+
+## Notice
+
+The `speckit-grill` skill is derived from the `grill-with-docs` skill in
+[Matt Pocock's skills collection](https://github.com/mattpocock/skills), used under the
+[MIT License](https://github.com/mattpocock/skills/blob/main/LICENSE). See [NOTICE](NOTICE) for the
+full attribution and license text.
