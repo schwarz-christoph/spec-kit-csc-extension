@@ -1,9 +1,19 @@
 NOTICE
 
-The speckit-grill skill in this extension is derived from the "grill-with-docs"
-skill in Matt Pocock's skills collection:
+The skills in this extension are derived from skills in Matt Pocock's skills
+collection:
 
     https://github.com/mattpocock/skills
+
+Derived skills and their upstream sources:
+
+    speckit-grill         <- skills/engineering/grill-with-docs
+    speckit-architecture  <- skills/engineering/improve-codebase-architecture
+    speckit-tdd           <- skills/engineering/tdd
+    speckit-prototype     <- skills/engineering/prototype
+    speckit-teach         <- skills/productivity/teach
+    speckit-caveman       <- skills/productivity/caveman
+    speckit-handoff       <- skills/productivity/handoff
 
 That work is licensed under the MIT License
 (https://github.com/mattpocock/skills/blob/main/LICENSE), reproduced below as

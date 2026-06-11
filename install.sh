@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Manual installer for the speckit-grill extension.
+# Manual installer for the spec-kit-csc-extension skills.
 # Use this when your spec-kit version does not support `specify extension add`.
 #
 # Usage: ./install.sh /path/to/your/spec-kit-project
@@ -13,21 +13,29 @@ if [[ ! -d "$TARGET/.specify" ]]; then
   exit 1
 fi
 
-# Claude Code: install as both a slash command and an auto-triggering skill.
+# Claude Code: install each command as a slash command and each skill as an
+# auto-triggering skill.
 if [[ -d "$TARGET/.claude" ]]; then
-  mkdir -p "$TARGET/.claude/commands" "$TARGET/.claude/skills/speckit-grill"
-  cp "$EXT_DIR/commands/speckit-grill.md" "$TARGET/.claude/commands/speckit-grill.md"
-  cp "$EXT_DIR/skills/speckit-grill/SKILL.md" \
-     "$EXT_DIR/skills/speckit-grill/ARTIFACT-MAP.md" \
-     "$TARGET/.claude/skills/speckit-grill/"
-  echo "installed: .claude/commands/speckit-grill.md"
-  echo "installed: .claude/skills/speckit-grill/ (SKILL.md, ARTIFACT-MAP.md)"
+  mkdir -p "$TARGET/.claude/commands"
+  for cmd in "$EXT_DIR"/commands/*.md; do
+    cp "$cmd" "$TARGET/.claude/commands/$(basename "$cmd")"
+    echo "installed: .claude/commands/$(basename "$cmd")"
+  done
+  for skill in "$EXT_DIR"/skills/*/; do
+    name="$(basename "$skill")"
+    mkdir -p "$TARGET/.claude/skills/$name"
+    cp "$skill"*.md "$TARGET/.claude/skills/$name/"
+    echo "installed: .claude/skills/$name/"
+  done
 fi
 
 # GitHub Copilot prompts, if the project uses them.
 if [[ -d "$TARGET/.github/prompts" ]]; then
-  cp "$EXT_DIR/commands/speckit-grill.md" "$TARGET/.github/prompts/speckit-grill.prompt.md"
-  echo "installed: .github/prompts/speckit-grill.prompt.md"
+  for cmd in "$EXT_DIR"/commands/*.md; do
+    base="$(basename "$cmd" .md)"
+    cp "$cmd" "$TARGET/.github/prompts/$base.prompt.md"
+    echo "installed: .github/prompts/$base.prompt.md"
+  done
 fi
 
-echo "done — /speckit-grill is available in $TARGET"
+echo "done — 7 /speckit-* commands available in $TARGET"
