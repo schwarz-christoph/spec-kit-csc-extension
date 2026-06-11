@@ -1,0 +1,28 @@
+schema_version: "1.0"
+
+extension:
+  id: "grill"
+  name: "Spec Kit Grill"
+  version: "0.1.0"
+  description: "Relentless grilling session that stress-tests the active feature against the constitution and spec-kit artifacts, and writes resolved decisions back inline"
+  author: "CAPTRON"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.1.0"
+  tools:
+    - name: "git"
+      required: false
+
+provides:
+  commands:
+    - name: "speckit-grill"
+      file: "commands/speckit-grill.md"
+      description: "Stress-test the active spec/plan against the constitution and spec-kit artifacts; write resolved decisions back inline as they crystallise"
+
+tags:
+  - "clarification"
+  - "review"
+  - "constitution"
+  - "adversarial"
+  - "ubiquitous-language"
