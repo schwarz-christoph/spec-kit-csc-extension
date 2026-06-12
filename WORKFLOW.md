@@ -72,34 +72,68 @@ these phases with deeper, less-bounded tooling.
 
 ---
 
-## 2. Where the csc commands slot in
+## 2. Where everything slots in
 
-Read this as the same pipeline with the seven csc commands hung off the phases they
-augment (the other bundled extensions are covered in §4):
+Read this as the core spec-kit spine (blue) with the seven csc commands (purple) hung off the
+phases they augment, plus the three bundled extensions: **brownfield** (green) onboarding an
+existing codebase *before* the loop, **agent-assign** (orange) swapping in for the execution
+phase, and **superspec** (gold) as a governance track wrapping the whole thing. The diagram
+renders on GitHub; details for each command are in §3 (csc) and §4 (bundled extensions).
 
-```
-/speckit-constitution
-        │
-/speckit-specify ─────────────► spec.md
-        │
-        ├─ /speckit-grill        ◄─ adversarial stress-test of the spec (unbounded)
-        ├─ /speckit-prototype    ◄─ build a throwaway to answer an open [NEEDS CLARIFICATION]
-        │
-/speckit-clarify  (bounded, ≤5 questions)
-        │
-/speckit-plan ───────────────► plan.md, research.md, data-model.md
-        │
-        ├─ /speckit-grill        ◄─ now also challenges the plan against the constitution + code
-        ├─ /speckit-architecture ◄─ codebase-wide deepening review (HTML report)
-        │
-/speckit-tasks ──────────────► tasks.md
-        │
-/speckit-implement
-        │
-        └─ /speckit-tdd          ◄─ red-green-refactor driven by Acceptance Scenarios + FR-###
+```mermaid
+flowchart TD
+    %% ---------- brownfield: onboard an existing codebase, before the loop ----------
+    subgraph BF["brownfield · onboard an existing codebase (optional, runs first)"]
+        direction LR
+        bf1["/speckit.brownfield.scan"] --> bf2["/speckit.brownfield.bootstrap"] --> bf3["/speckit.brownfield.validate"] --> bf4["/speckit.brownfield.migrate"]
+    end
 
-  any time:  /speckit-caveman   (compress responses)   /speckit-handoff   (compact + hand off)
-             /speckit-teach     (stateful teaching workspace)
+    %% ---------- core spec-kit spine ----------
+    C["/speckit-constitution"] --> S["/speckit-specify<br/>► spec.md"]
+    S --> CL["/speckit-clarify<br/>bounded, ≤5 questions"]
+    CL --> P["/speckit-plan<br/>► plan.md · research.md · data-model.md"]
+    P --> T["/speckit-tasks<br/>► tasks.md"]
+    T --> IMPL["/speckit-implement<br/>► the code"]
+
+    BF -.->|reverse-engineered constitution + specs| C
+
+    %% ---------- csc commands hung off the phases ----------
+    S -.-> grill1["/speckit-grill<br/>adversarial stress-test of the spec (unbounded)"]
+    S -.-> proto["/speckit-prototype<br/>throwaway to answer an open [NEEDS CLARIFICATION]"]
+    P -.-> grill2["/speckit-grill<br/>now challenges the plan vs constitution + code"]
+    P -.-> arch["/speckit-architecture<br/>codebase-wide deepening review (HTML report)"]
+    IMPL -.-> tdd["/speckit-tdd<br/>red-green-refactor driven by Acceptance Scenarios + FR-###"]
+
+    %% ---------- agent-assign: specialized execution, replaces /speckit-implement ----------
+    subgraph AA["agent-assign · specialized execution (replaces /speckit-implement on larger projects)"]
+        direction LR
+        aa1["/speckit.agent-assign.assign<br/>► agent-assignments.yml"] --> aa2["/speckit.agent-assign.validate"] --> aa3["/speckit.agent-assign.execute"]
+    end
+    T -.->|larger projects| AA
+
+    %% ---------- superspec: governance track wrapping the loop ----------
+    subgraph SS["superspec · governance + resumability around the loop"]
+        direction LR
+        ss1["/speckit.superspec.status"] --- ss2["/speckit.superspec.brainstorm"] --- ss3["/speckit.superspec.tasks"] --- ss4["/speckit.superspec.execute"] --- ss5["/speckit.superspec.review"]
+    end
+    SS -.->|alternative governance / execution track| P
+
+    %% ---------- session-wide csc utilities ----------
+    UTIL["any time · /speckit-caveman (compress) · /speckit-handoff (hand off) · /speckit-teach (teaching workspace)"]
+
+    classDef core fill:#1f6feb,stroke:#0b3d91,color:#fff;
+    classDef csc fill:#8957e5,stroke:#4c2889,color:#fff;
+    classDef bf fill:#1a7f37,stroke:#0d4f22,color:#fff;
+    classDef aa fill:#bf4b00,stroke:#7a3000,color:#fff;
+    classDef ss fill:#9a6700,stroke:#5c3d00,color:#fff;
+    classDef util fill:#444c56,stroke:#22272e,color:#fff;
+
+    class C,S,CL,P,T,IMPL core;
+    class grill1,grill2,proto,arch,tdd csc;
+    class bf1,bf2,bf3,bf4 bf;
+    class aa1,aa2,aa3 aa;
+    class ss1,ss2,ss3,ss4,ss5 ss;
+    class UTIL util;
 ```
 
 ### Clarification: `/speckit-clarify` vs `/speckit-grill`
