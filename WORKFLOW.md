@@ -111,8 +111,10 @@ then return to the path). Read the line first, then the flow diagram below it.
 
 ### Flow diagram
 
-The main path is blue and runs straight down; orange diamonds are branch points; purple is csc;
-green is brownfield; the gold/grey boxes are always-available side tracks. Renders on GitHub.
+The main path is blue and runs straight down; orange diamonds are branch points; purple is csc.
+The three bundled extensions are full tracks wired into the path: **brownfield** (green) feeds the
+start, **agent-assign** (orange) is the specialized branch off *tasks*, and **superspec** (gold) is
+a parallel governance track that can resume into the loop and ends at the same goal. Renders on GitHub.
 
 ```mermaid
 flowchart TD
@@ -120,9 +122,13 @@ flowchart TD
     G([★ START · green-field]):::entry
     E([★ START · existing codebase]):::entry
 
-    %% ===== brownfield onboarding (existing codebases only) =====
-    E --> BF["brownfield · scan → bootstrap → validate → migrate"]:::bf
-    BF -->|reverse-engineered constitution + specs| C
+    %% ===== brownfield: onboard an existing codebase (extension, runs first) =====
+    subgraph BF["brownfield · onboard existing codebase"]
+        direction LR
+        bf1["scan"]:::bf --> bf2["bootstrap"]:::bf --> bf3["validate"]:::bf --> bf4["migrate"]:::bf
+    end
+    E --> bf1
+    bf4 -->|reverse-engineered constitution + specs| C
 
     %% ===== linear happy path =====
     G --> C
@@ -136,16 +142,31 @@ flowchart TD
     b2 -->|skip| T
     T["5 · /speckit-tasks ► tasks.md"]:::core --> b3{"⑂ build how?"}:::branch
     b3 -->|standard| IMPL["6 · /speckit-implement"]:::core
-    b3 -->|specialized, larger projects| AA["agent-assign · assign → validate → execute"]:::aa
+    b3 -->|specialized, larger projects| AA
+
+    %% ===== agent-assign: specialized execution (extension, replaces implement) =====
+    subgraph AA["agent-assign · specialized execution"]
+        direction LR
+        aa1["assign ► agent-assignments.yml"]:::aa --> aa2["validate"]:::aa --> aa3["execute"]:::aa
+    end
+
     IMPL --> b4{"⑂ test-first?"}:::branch
     b4 -->|yes| TDD["/speckit-tdd · red-green-refactor (FR-### / scenarios)"]:::csc --> DONE
     b4 -->|no| DONE
-    AA --> DONE
+    aa3 --> DONE
     DONE([✓ feature shipped]):::entry
 
-    %% ===== always-available side tracks (not on the path) =====
-    UTIL["any time · /speckit-caveman · /speckit-handoff · /speckit-teach"]:::util
-    SS["alternative track · superspec · status · brainstorm · tasks · execute · review"]:::ss
+    %% ===== superspec: parallel governance track (extension) =====
+    SG([★ START · superspec governance]):::entry --> ss1
+    subgraph SS["superspec · governance + resumability (alternative track)"]
+        direction TB
+        ss1["status"]:::ss --> ss2["brainstorm"]:::ss --> ss3["tasks"]:::ss --> ss4["execute"]:::ss --> ss5["review"]:::ss
+    end
+    ss1 -.->|resume · recommend next action| C
+    ss5 --> DONE
+
+    %% ===== always-available csc utilities =====
+    G -. available any time .-> UTIL["/speckit-caveman · /speckit-handoff · /speckit-teach"]:::util
 
     classDef entry fill:#0b3d91,stroke:#06214d,color:#fff;
     classDef core fill:#1f6feb,stroke:#0b3d91,color:#fff;
