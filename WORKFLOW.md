@@ -23,11 +23,15 @@ This does, in order:
 
 1. **`specify init`** for the first agent, then layers the second agent on top with
    `--here --force` (so `--ai both` gives you a project both Claude Code and Codex understand).
-2. **Installs the configured extensions** — by default `csc` (this repo) plus
-   `brownfield`, `superspec`, and `agent-assign`. Commands land in `.claude/commands/`
-   and skills in `.claude/skills/` for Claude Code; for Codex everything is written into
-   the cross-agent `.agents/skills/<name>/SKILL.md` layout (plain commands are auto-wrapped
-   into SKILL.md entries).
+2. **Installs the configured extensions** — by default `csc` (this repo, the seven commands
+   in §3) plus three third-party extensions that each add their own sub-workflow:
+   [`brownfield`](https://github.com/Quratulain-bilal/spec-kit-brownfield) (onboard existing
+   codebases), [`superspec`](https://github.com/WangX0111/superspec) (governance + status +
+   review), and [`spec-kit-agent-assign`](https://github.com/xymelon/spec-kit-agent-assign)
+   (route tasks to specialized agents). See §4 for what each contributes. Commands land in
+   `.claude/commands/` and skills in `.claude/skills/` for Claude Code; for Codex everything
+   is written into the cross-agent `.agents/skills/<name>/SKILL.md` layout (plain commands are
+   auto-wrapped into SKILL.md entries).
 3. **Writes your MCP servers** into the right place per agent — `.mcp.json` for Claude Code,
    `~/.codex/config.toml` for Codex.
 4. **Runs your post-init hooks** (configurable shell commands).
@@ -68,10 +72,10 @@ these phases with deeper, less-bounded tooling.
 
 ---
 
-## 2. Where the extensions slot in
+## 2. Where the csc commands slot in
 
-Read this as the same pipeline with the seven extension commands hung off the phases they
-augment:
+Read this as the same pipeline with the seven csc commands hung off the phases they
+augment (the other bundled extensions are covered in §4):
 
 ```
 /speckit-constitution
@@ -114,7 +118,7 @@ feature is high-stakes and you want every assumption attacked until the design h
 
 ---
 
-## 3. The seven commands in detail
+## 3. The seven csc commands in detail
 
 | Command | When you reach for it | Reads | Writes |
 |---|---|---|---|
@@ -132,7 +136,63 @@ You can invoke each as a slash command, or just describe the intent in natural l
 
 ---
 
-## 4. The discipline every extension command follows
+## 4. The other bundled extensions
+
+`csc init` installs three more extensions alongside the csc commands. Unlike the seven csc
+commands — which are deliberately *spec-kit-native* and route every writeback into existing
+artifacts (§5) — these are independent third-party tools, each with its own command namespace
+(note the `.` separators) and its own sub-workflow. Use them when the situation calls for it;
+they are not required on every feature.
+
+### brownfield — adopt SDD in an existing codebase
+
+For when you're bringing spec-kit to a project that *already has code*, rather than starting
+green-field. A four-command sequence run **before** the normal loop:
+
+| Command | Does | Produces |
+|---|---|---|
+| `/speckit.brownfield.scan` | Auto-discovers tech stack, frameworks, architecture, naming conventions | project profile (read-only) |
+| `/speckit.brownfield.bootstrap` | Generates spec-kit config derived from the actual codebase | constitution, spec/plan templates, `AGENTS.md` |
+| `/speckit.brownfield.validate` | Confirms bootstrap output matches reality; detects drift | validation report (read-only) |
+| `/speckit.brownfield.migrate` | Reverse-engineers specs from existing code + tests | reconstructed `spec.md`, `plan.md`, `tasks.md` |
+
+Flow: **scan → bootstrap → validate → migrate**, then you're in the normal §1 loop with a
+constitution and specs that reflect the code you already have.
+
+### superspec — governance, status, and review around the loop
+
+Adds project-governance and resumability commands that wrap the core loop:
+
+| Command | Does |
+|---|---|
+| `/speckit.superspec.status` | Shows progress and recommends the next action — resume from any interruption |
+| `/speckit.superspec.brainstorm` | Deep edge-case / boundary exploration to refine the spec (iterates with plan) |
+| `/speckit.superspec.tasks` | Phased task breakdown with execution markers |
+| `/speckit.superspec.execute` | TDD-disciplined implementation with subagent coordination |
+| `/speckit.superspec.review` | Verifies the code against spec requirements + acceptance criteria |
+
+Its `brainstorm` overlaps in spirit with `/speckit-grill` (both pressure-test the spec) and its
+`execute` with `/speckit-tdd` — superspec leans toward orchestration/governance, the csc
+commands toward depth on a single artifact. Pick whichever fits; don't run both on the same step.
+
+### spec-kit-agent-assign — route tasks to specialized agents
+
+Slots in **after `/speckit-tasks`** and effectively replaces `/speckit-implement` with a
+specialized-execution path: instead of one generalist context building everything, each task
+is routed to the best-fit agent.
+
+| Command | Produces |
+|---|---|
+| `/speckit.agent-assign.assign` | `agent-assignments.yml` mapping each task → best-fit agent (by path, keywords, context) |
+| `/speckit.agent-assign.validate` | validation report (coverage, agent existence, assignment integrity) |
+| `/speckit.agent-assign.execute` | implements by spawning dedicated subagents for specialized tasks; `default` tasks run inline |
+
+Flow: **tasks → assign → validate → execute**. Reach for this on larger projects where
+task-level specialization pays off.
+
+---
+
+## 5. The discipline every csc command follows
 
 This is what makes the extension *spec-kit-native* rather than a bolt-on. Every editing
 command obeys the same rules, so writebacks always land in the right artifact and never
@@ -154,11 +214,14 @@ sprawl into invented files:
 
 ---
 
-## 5. A typical end-to-end run
+## 6. A typical end-to-end run
 
 A representative session for a non-trivial feature:
 
 1. `csc init payments --ai both` — bootstrap the project with extensions + MCP.
+   *(Existing codebase instead of green-field? Run the brownfield sequence first —
+   `/speckit.brownfield.scan → bootstrap → validate → migrate` — to reverse-engineer a
+   constitution and specs from the code you already have.)*
 2. `/speckit-constitution` — set the project's principles (once per project).
 3. `/speckit-specify` — write the feature spec.
 4. `/speckit-grill` — attack the spec; resolved decisions land back in `spec.md`.
@@ -169,8 +232,12 @@ A representative session for a non-trivial feature:
 8. `/speckit-tasks` — generate `tasks.md`.
 9. `/speckit-implement` + `/speckit-tdd` — build it test-first; each test cites its `FR-###`/`SC`,
    and completed cycles tick the matching task.
+   *(On a larger project, route tasks to specialized agents instead:
+   `/speckit.agent-assign.assign → validate → execute`.)*
 10. `/speckit-handoff` — when the session ends, compact it into a handoff doc for the next agent.
 
 Not every feature needs every step — `/speckit-grill`, `/speckit-architecture`, and
-`/speckit-prototype` are the ones you add when the stakes or the uncertainty justify them.
+`/speckit-prototype` are the ones you add when the stakes or the uncertainty justify them, and
+the brownfield / superspec / agent-assign sub-workflows (§4) come in only when their situation
+applies.
 ```
