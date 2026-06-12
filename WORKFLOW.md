@@ -24,11 +24,13 @@ This does, in order:
 1. **`specify init`** for the first agent, then layers the second agent on top with
    `--here --force` (so `--ai both` gives you a project both Claude Code and Codex understand).
 2. **Installs the configured extensions** — by default `csc` (this repo, the seven commands
-   in §3) plus three third-party extensions that each add their own sub-workflow:
+   in §3) plus four third-party extensions that each add their own sub-workflow:
    [`brownfield`](https://github.com/Quratulain-bilal/spec-kit-brownfield) (onboard existing
    codebases), [`superspec`](https://github.com/WangX0111/superspec) (enhanced clarify / tasks /
-   implement / review), and [`spec-kit-agent-assign`](https://github.com/xymelon/spec-kit-agent-assign)
-   (route tasks to specialized agents). See §4 for what each contributes. Commands land in
+   implement / review), [`spec-kit-agent-assign`](https://github.com/xymelon/spec-kit-agent-assign)
+   (route tasks to specialized agents), and
+   [`ui-ux-pro-max`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (design
+   intelligence for UI/UX work). See §4 for what each contributes. Commands land in
    `.claude/commands/` and skills in `.claude/skills/` for Claude Code; for Codex everything
    is written into the cross-agent `.agents/skills/<name>/SKILL.md` layout (plain commands are
    auto-wrapped into SKILL.md entries).
@@ -93,7 +95,8 @@ Two things are worth saying up front because they shape the whole picture:
 ### 2.1 Main flow — the loop with its decision points
 
 Blue = core spec-kit · purple = csc commands · gold = superspec · orange = agent-assign ·
-green = the brownfield hand-off · ◆ = a point where you choose between approaches. Renders on GitHub.
+green = the brownfield hand-off · teal = the ui-ux-pro-max skill · ◆ = a point where you choose
+between approaches. Renders on GitHub.
 
 ```mermaid
 flowchart TD
@@ -138,6 +141,8 @@ flowchart TD
         AA1["assign<br/>► agent-assignments.yml"]:::aa --> AA2["validate"]:::aa --> AA3["execute<br/>(specialized + default/inline tasks)"]:::aa
     end
 
+    Q4 -. "UI feature? design intelligence<br/>auto-triggers in any approach" .-> UXP["ui-ux-pro-max skill<br/>► design-system/MASTER.md · pages/*.md"]:::ux
+
     I1 --> Q5
     I2 --> Q5
     AA3 --> Q5
@@ -157,6 +162,7 @@ flowchart TD
     classDef ss fill:#9a6700,stroke:#5c3d00,color:#fff;
     classDef branch fill:#d29922,stroke:#7a5800,color:#000;
     classDef util fill:#444c56,stroke:#22272e,color:#fff;
+    classDef ux fill:#0e7490,stroke:#083d4d,color:#fff;
 ```
 
 **Reading the decisions:**
@@ -236,11 +242,11 @@ You can invoke each as a slash command, or just describe the intent in natural l
 
 ## 4. The other bundled extensions
 
-`csc init` installs three more extensions alongside the csc commands. Unlike the seven csc
+`csc init` installs four more extensions alongside the csc commands. Unlike the seven csc
 commands — which are deliberately *spec-kit-native* and route every writeback into existing
 artifacts (§5) — these are independent third-party tools, each with its own command namespace
-(note the `.` separators) and its own sub-workflow. Use them when the situation calls for it;
-they are not required on every feature.
+(note the `.` separators) or, in ui-ux-pro-max's case, an auto-triggering skill with its own
+files. Use them when the situation calls for it; they are not required on every feature.
 
 ### brownfield — adopt SDD in an existing codebase
 
@@ -296,6 +302,29 @@ Flow: **tasks → assign → validate → execute** (an optional `after_tasks` h
 right after task generation). Reach for it on larger projects where per-task specialization and
 cross-agent parallelism pay off.
 
+### ui-ux-pro-max — design intelligence for UI work
+
+Unlike the other three, this is **not a command set** — it's a single skill
+(`.claude/skills/ui-ux-pro-max/`, mirrored into `.agents/skills/` for Codex) that
+**auto-triggers** whenever a task touches UI structure, visual design, or UX quality: building
+pages or components, choosing color/typography/spacing systems, reviewing UI code for
+accessibility or consistency. It carries a searchable CSV database (67 styles, 161 palettes,
+57 font pairings, 99 UX guidelines, 25 chart types across 15+ stacks) queried via a bundled
+Python engine:
+
+```bash
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "fintech dashboard" --design-system
+```
+
+With `--persist` it generates a project-wide design system — `design-system/MASTER.md` plus
+per-page overrides in `design-system/pages/` — that later UI tasks read first, so styling stays
+consistent across sessions. In the §2.1 loop it sits orthogonal to the decision diamonds: it
+informs whichever *implement* approach you picked (and UI prototypes from
+`/speckit-prototype`) rather than replacing any step. Note it keeps its own `design-system/`
+files — the §5 artifact discipline applies to the seven csc commands, not to this skill; treat
+`design-system/MASTER.md` as the UI counterpart of the constitution: project-global, not
+per-feature.
+
 ---
 
 ## 5. The discipline every csc command follows
@@ -339,7 +368,9 @@ A representative session for a non-trivial feature:
    execution markers (`[P]`,`[TDD]`,`[REVIEW]`,`[SUBAGENT]`) to drive a later `superspec.execute`.
 9. **Implement** — pick one approach: `/speckit-implement` (inline), `/speckit-tdd` /
    `/speckit.superspec.execute` (test-first), or — on a larger project with a roster of
-   specialized agents — `/speckit.agent-assign.assign → validate → execute`.
+   specialized agents — `/speckit.agent-assign.assign → validate → execute`. On UI-heavy
+   features the **ui-ux-pro-max** skill auto-triggers inside whichever approach you picked;
+   generate its `design-system/MASTER.md` once up front so every page styles consistently.
 10. `/speckit.superspec.review` *(optional)* — score the result against spec + constitution
     before shipping.
 11. `/speckit-handoff` — when the session ends, compact it into a handoff doc for the next agent.

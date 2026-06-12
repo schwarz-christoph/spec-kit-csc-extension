@@ -46,6 +46,7 @@ export const DEFAULT_CONFIG: Config = {
     brownfield: "https://github.com/Quratulain-bilal/spec-kit-brownfield/archive/refs/tags/v1.0.0.zip",
     superspec: "https://github.com/WangX0111/superspec.git",
     "agent-assign": "https://github.com/xymelon/spec-kit-agent-assign/archive/refs/tags/v1.0.0.zip",
+    "ui-ux-pro-max": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
   },
   mcp: {},
   hooks: {

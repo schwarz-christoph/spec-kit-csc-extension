@@ -127,9 +127,14 @@ async function resolveSource(source: string): Promise<ResolvedSource> {
 /** GitHub archives wrap everything in <repo>-<tag>/ — descend into it. */
 function findExtensionRoot(dir: string): string {
   const qualifies = (d: string) =>
-    ["extension.yml", "commands", "skills", "SKILL.md"].some((f) =>
-      fs.existsSync(path.join(d, f)),
-    );
+    [
+      "extension.yml",
+      "commands",
+      "skills",
+      "SKILL.md",
+      path.join(".claude-plugin", "plugin.json"),
+      path.join(".claude", "skills"),
+    ].some((f) => fs.existsSync(path.join(d, f)));
   if (qualifies(dir)) return dir;
   const subdirs = fs
     .readdirSync(dir, { withFileTypes: true })
@@ -232,6 +237,11 @@ function collectSkills(root: string, manifest: Manifest, source: string): SkillD
       if (entry.isDirectory()) out.push({ name: entry.name, srcDir: path.join(skillsDir, entry.name) });
     }
   }
+  if (!out.length) {
+    for (const dir of pluginSkillDirs(root)) {
+      out.push({ name: path.basename(dir), srcDir: dir });
+    }
+  }
   const rootSkill = path.join(root, "SKILL.md");
   if (fs.existsSync(rootSkill)) {
     const name = manifest.id ?? path.basename(source, path.extname(source)).replace(/[^\w-]/g, "-");
@@ -247,10 +257,56 @@ function collectSkills(root: string, manifest: Manifest, source: string): SkillD
   return out;
 }
 
+/**
+ * Claude plugin layout: .claude-plugin/plugin.json lists the skill dirs the
+ * plugin actually ships (e.g. ui-ux-pro-max); without a manifest, every
+ * .claude/skills/<name>/ with a SKILL.md counts.
+ */
+function pluginSkillDirs(root: string): string[] {
+  const hasSkillMd = (d: string) => fs.existsSync(path.join(d, "SKILL.md"));
+  const manifestPath = path.join(root, ".claude-plugin", "plugin.json");
+  if (fs.existsSync(manifestPath)) {
+    try {
+      const declared = JSON.parse(fs.readFileSync(manifestPath, "utf8")).skills;
+      if (Array.isArray(declared)) {
+        const dirs = declared
+          .filter((s): s is string => typeof s === "string")
+          .map((s) => path.resolve(root, s))
+          .filter(hasSkillMd);
+        if (dirs.length) return dirs;
+      }
+    } catch {
+      /* unreadable manifest — fall back to the directory scan */
+    }
+  }
+  const skillsDir = path.join(root, ".claude", "skills");
+  if (!fs.existsSync(skillsDir)) return [];
+  return fs
+    .readdirSync(skillsDir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && hasSkillMd(path.join(skillsDir, e.name)))
+    .map((e) => path.join(skillsDir, e.name));
+}
+
+/**
+ * Recursive copy that materialises symlinks (cpSync's `dereference` keeps
+ * directory symlinks as links): plugin repos symlink data/scripts into a
+ * shared src/ tree, and the link targets vanish with the temp clone.
+ */
+function copyDereferenced(src: string, dest: string): void {
+  if (fs.statSync(src).isDirectory()) {
+    fs.mkdirSync(dest, { recursive: true });
+    for (const e of fs.readdirSync(src)) {
+      copyDereferenced(path.join(src, e), path.join(dest, e));
+    }
+  } else {
+    fs.copyFileSync(src, dest);
+  }
+}
+
 function installSkill(skill: SkillDir, destBase: string): void {
   const dest = path.join(destBase, skill.name);
   if (skill.srcDir) {
-    fs.cpSync(skill.srcDir, dest, { recursive: true });
+    copyDereferenced(skill.srcDir, dest);
     return;
   }
   fs.mkdirSync(dest, { recursive: true });

@@ -32,8 +32,9 @@ csc init my-project --ai both
 One `csc init` runs `specify init` (falling back to `uvx --from git+…spec-kit.git` when `specify`
 is not on PATH), installs the configured spec-kit extensions — by default this extension plus
 [spec-kit-brownfield](https://github.com/Quratulain-bilal/spec-kit-brownfield),
-[superspec](https://github.com/WangX0111/superspec), and
-[spec-kit-agent-assign](https://github.com/xymelon/spec-kit-agent-assign) — writes your MCP servers
+[superspec](https://github.com/WangX0111/superspec),
+[spec-kit-agent-assign](https://github.com/xymelon/spec-kit-agent-assign), and
+[ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) — writes your MCP servers
 into the right place per agent (`.mcp.json` for Claude Code, `~/.codex/config.toml` for Codex), and
 runs your post-init hooks.
 
@@ -50,7 +51,10 @@ csc self update                  # reinstall from this repo
 
 Extensions can be git URLs, GitHub zip archives, or local paths; `extension.yml` manifests are
 honoured (declared command names, templates, extension id), and for Codex plain commands are
-wrapped into `.agents/skills/<name>/SKILL.md` entries automatically. Run `csc --help` for the full
+wrapped into `.agents/skills/<name>/SKILL.md` entries automatically. Claude plugin repos work
+too: the skill dirs declared in `.claude-plugin/plugin.json` (fallback: every
+`.claude/skills/<name>/` with a `SKILL.md`) are installed, with symlinked `data`/`scripts`
+assets materialised into real files. Run `csc --help` for the full
 reference. CLI sources live in [`src/`](src/); build with `npm install && npm run build`.
 
 ## Commands
