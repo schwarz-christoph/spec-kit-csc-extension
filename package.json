@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "tsc"
+    "prepare": "tsc"
   },
   "engines": {
     "node": ">=18"

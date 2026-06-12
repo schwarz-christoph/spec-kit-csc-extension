@@ -26,8 +26,8 @@ This does, in order:
 2. **Installs the configured extensions** — by default `csc` (this repo, the seven commands
    in §3) plus three third-party extensions that each add their own sub-workflow:
    [`brownfield`](https://github.com/Quratulain-bilal/spec-kit-brownfield) (onboard existing
-   codebases), [`superspec`](https://github.com/WangX0111/superspec) (governance + status +
-   review), and [`spec-kit-agent-assign`](https://github.com/xymelon/spec-kit-agent-assign)
+   codebases), [`superspec`](https://github.com/WangX0111/superspec) (enhanced clarify / tasks /
+   implement / review), and [`spec-kit-agent-assign`](https://github.com/xymelon/spec-kit-agent-assign)
    (route tasks to specialized agents). See §4 for what each contributes. Commands land in
    `.claude/commands/` and skills in `.claude/skills/` for Claude Code; for Codex everything
    is written into the cross-agent `.agents/skills/<name>/SKILL.md` layout (plain commands are
@@ -74,99 +74,80 @@ these phases with deeper, less-bounded tooling.
 
 ## 2. The workflow, end to end
 
-There is **one linear happy path** down the middle. Everything else is either an *entry point*
-(★ — where you join the path) or a *branch* (⑂ — an optional detour you can take or skip and
-then return to the path). Read the line first, then the flow diagram below it.
+The core spec-kit loop is a straight line: **constitution → specify → clarify → plan → tasks →
+implement**. What the extensions add is *choice at each step* — most steps have more than one way
+to do them, so the diagram below models them as **decision diamonds** (orange ◆) rather than a
+single fixed path. Pick the approach that fits the feature; the unchosen ones are just skipped.
 
-### The linear path
+Two things are worth saying up front because they shape the whole picture:
 
-```
-★ START (green-field) ─┐
-                       ▼
-★ START (existing code) ─► brownfield: scan → bootstrap → validate → migrate ─┐
-                       ┌──────────────────────────────────────────────────────┘
-                       ▼
-1.  /speckit-constitution
-2.  /speckit-specify          ► spec.md        ⑂ deepen?  /speckit-grill · /speckit-prototype
-3.  /speckit-clarify          (≤5 questions)
-4.  /speckit-plan             ► plan.md · research.md · data-model.md
-                                               ⑂ deepen?  /speckit-grill · /speckit-architecture
-5.  /speckit-tasks            ► tasks.md       ⑂ build how? ── standard ──► step 6
-                                                            └ specialized ─► agent-assign
-6.  /speckit-implement                         ⑂ test-first? /speckit-tdd
-    ▼
-✓ feature shipped
-```
+- **Existing codebase?** Onboarding a project that already has code is a *separate* up-front
+  workflow — the **brownfield** extension — with its own four-step flow and gates. It's drawn as
+  its own diagram in §2.2; it ends by feeding a generated constitution + reverse-engineered specs
+  into the main loop.
+- **superspec is not a separate track.** It does **not** run end-to-end alongside the loop —
+  it *augments individual steps* (a richer clarify, an enhanced tasks, a TDD/subagent execute, and
+  a review gate), wired in via optional hooks that prompt "use the enhanced version?" at the
+  matching boundary. So it shows up inside the decision diamonds, not as a parallel lane.
 
-- **★ Where you can start:** green-field projects begin at step 1; an existing codebase starts
-  with the **brownfield** sequence, which reverse-engineers a constitution + specs and drops
-  you onto step 1.
-- **⑂ Where you can branch:** after *specify* and after *plan* you may take a deepening detour
-  (grill / prototype / architecture) and return; at *tasks* you choose standard
-  `/speckit-implement` **or** **agent-assign** specialized execution; during *implement* you can
-  drive it test-first with `/speckit-tdd`.
-- **Always available (not on the path):** `/speckit-caveman`, `/speckit-handoff`,
-  `/speckit-teach`, and the **superspec** governance track (status / brainstorm / review) can be
-  invoked at any point.
+### 2.1 Main flow — the loop with its decision points
 
-### Flow diagram
-
-The main path is blue and runs straight down; orange diamonds are branch points; purple is csc.
-The three bundled extensions are full tracks wired into the path: **brownfield** (green) feeds the
-start, **agent-assign** (orange) is the specialized branch off *tasks*, and **superspec** (gold) is
-a parallel governance track that can resume into the loop and ends at the same goal. Renders on GitHub.
+Blue = core spec-kit · purple = csc commands · gold = superspec · orange = agent-assign ·
+green = the brownfield hand-off · ◆ = a point where you choose between approaches. Renders on GitHub.
 
 ```mermaid
 flowchart TD
-    %% ===== entry points =====
-    G([★ START · green-field]):::entry
-    E([★ START · existing codebase]):::entry
+    START([★ START]):::entry --> Q0{"new or existing<br/>codebase?"}:::branch
+    Q0 -->|green-field| C
+    Q0 -->|existing code| BREF["▶ Brownfield onboarding<br/>(separate flow, §2.2)"]:::bf
+    BREF -->|generated constitution + migrated specs| C
 
-    %% ===== brownfield: onboard an existing codebase (extension, runs first) =====
-    subgraph BF["brownfield · onboard existing codebase"]
-        direction LR
-        bf1["scan"]:::bf --> bf2["bootstrap"]:::bf --> bf3["validate"]:::bf --> bf4["migrate"]:::bf
-    end
-    E --> bf1
-    bf4 -->|reverse-engineered constitution + specs| C
+    C["/speckit-constitution"]:::core --> S["/speckit-specify<br/>► spec.md"]:::core
 
-    %% ===== linear happy path =====
-    G --> C
-    C["1 · /speckit-constitution"]:::core --> S["2 · /speckit-specify ► spec.md"]:::core
-    S --> b1{"⑂ deepen the spec?"}:::branch
-    b1 -->|grill / prototype| D1["/speckit-grill · /speckit-prototype"]:::csc --> CL
-    b1 -->|skip| CL
-    CL["3 · /speckit-clarify · ≤5 questions"]:::core --> P["4 · /speckit-plan ► plan.md · research.md · data-model.md"]:::core
-    P --> b2{"⑂ deepen the plan?"}:::branch
-    b2 -->|grill / architecture| D2["/speckit-grill · /speckit-architecture"]:::csc --> T
-    b2 -->|skip| T
-    T["5 · /speckit-tasks ► tasks.md"]:::core --> b3{"⑂ build how?"}:::branch
-    b3 -->|standard| IMPL["6 · /speckit-implement"]:::core
-    b3 -->|specialized, larger projects| AA
+    %% ---- decision: how to clarify / harden the spec ----
+    S --> Q1{"clarify and harden<br/>the spec — how?"}:::branch
+    Q1 -->|"quick, bounded · ≤5 Qs"| CL["/speckit-clarify"]:::core
+    Q1 -->|"deep edge-case sweep · iterates"| BR["/speckit.superspec.brainstorm"]:::ss
+    Q1 -->|"adversarial stress-test"| GR1["/speckit-grill"]:::csc
+    Q1 -->|"build a throwaway to answer it"| PR["/speckit-prototype"]:::csc
+    BR -. loop until the spec is solid .-> S
+    CL --> P
+    BR --> P
+    GR1 --> P
+    PR --> P
 
-    %% ===== agent-assign: specialized execution (extension, replaces implement) =====
+    P["/speckit-plan<br/>► plan.md · research.md · data-model.md"]:::core --> Q2{"pressure-test<br/>the plan? (optional)"}:::branch
+    Q2 -->|"challenge vs constitution + code"| GR2["/speckit-grill"]:::csc --> Q3
+    Q2 -->|"deepening / shallow-module review"| AR["/speckit-architecture"]:::csc --> Q3
+    Q2 -->|skip| Q3
+
+    %% ---- decision: how to generate tasks ----
+    Q3{"generate tasks —<br/>how?"}:::branch
+    Q3 -->|standard| T1["/speckit-tasks"]:::core
+    Q3 -->|"enhanced markers [P] [TDD] [REVIEW] [SUBAGENT]"| T2["/speckit.superspec.tasks"]:::ss
+    T1 --> TM["tasks.md"]:::core
+    T2 --> TM
+
+    %% ---- decision: how to implement ----
+    TM --> Q4{"implement —<br/>which approach?"}:::branch
+    Q4 -->|"standard, inline"| I1["/speckit-implement"]:::core
+    Q4 -->|"test-first · RED-GREEN-REFACTOR"| I2["/speckit-tdd  or  /speckit.superspec.execute"]:::csc
+    Q4 -->|"route tasks to specialized agents"| AA1
     subgraph AA["agent-assign · specialized execution"]
         direction LR
-        aa1["assign ► agent-assignments.yml"]:::aa --> aa2["validate"]:::aa --> aa3["execute"]:::aa
+        AA1["assign<br/>► agent-assignments.yml"]:::aa --> AA2["validate"]:::aa --> AA3["execute<br/>(specialized + default/inline tasks)"]:::aa
     end
 
-    IMPL --> b4{"⑂ test-first?"}:::branch
-    b4 -->|yes| TDD["/speckit-tdd · red-green-refactor (FR-### / scenarios)"]:::csc --> DONE
-    b4 -->|no| DONE
-    aa3 --> DONE
+    I1 --> Q5
+    I2 --> Q5
+    AA3 --> Q5
+    Q5{"review against<br/>spec? (optional)"}:::branch
+    Q5 -->|"compliance review gate"| RV["/speckit.superspec.review"]:::ss --> DONE
+    Q5 -->|skip| DONE
     DONE([✓ feature shipped]):::entry
 
-    %% ===== superspec: parallel governance track (extension) =====
-    SG([★ START · superspec governance]):::entry --> ss1
-    subgraph SS["superspec · governance + resumability (alternative track)"]
-        direction TB
-        ss1["status"]:::ss --> ss2["brainstorm"]:::ss --> ss3["tasks"]:::ss --> ss4["execute"]:::ss --> ss5["review"]:::ss
-    end
-    ss1 -.->|resume · recommend next action| C
-    ss5 --> DONE
-
-    %% ===== always-available csc utilities =====
-    G -. available any time .-> UTIL["/speckit-caveman · /speckit-handoff · /speckit-teach"]:::util
+    %% ---- always available, off the path ----
+    START -. any time .-> UTIL["/speckit-caveman · /speckit-handoff · /speckit-teach"]:::util
 
     classDef entry fill:#0b3d91,stroke:#06214d,color:#fff;
     classDef core fill:#1f6feb,stroke:#0b3d91,color:#fff;
@@ -177,6 +158,47 @@ flowchart TD
     classDef branch fill:#d29922,stroke:#7a5800,color:#000;
     classDef util fill:#444c56,stroke:#22272e,color:#fff;
 ```
+
+**Reading the decisions:**
+
+| ◆ Decision | Options | Pick when |
+|---|---|---|
+| clarify the spec | `/speckit-clarify` · `superspec.brainstorm` · `/speckit-grill` · `/speckit-prototype` | bounded cleanup / deep iterative edge-case sweep / adversarial stress-test / an open question needs a runnable answer |
+| pressure-test the plan | `/speckit-grill` · `/speckit-architecture` · skip | challenge the plan vs constitution+code / hunt shallow modules / the plan is already solid |
+| generate tasks | `/speckit-tasks` · `superspec.tasks` | plain task list / you want execution markers (`[P]`,`[TDD]`,`[REVIEW]`,`[SUBAGENT]`) to drive execute |
+| implement | `/speckit-implement` · `/speckit-tdd` or `superspec.execute` · **agent-assign** | one inline context / test-first discipline / route tasks to specialized agents (larger projects) |
+| review | `superspec.review` · skip | you want a scored spec/constitution-compliance gate before shipping |
+
+`/speckit-caveman`, `/speckit-handoff`, and `/speckit-teach` sit off the path — invoke them at any
+point. superspec's `/speckit.superspec.status` is also callable any time to report progress and
+the recommended next step (it's resumable across sessions).
+
+### 2.2 Brownfield onboarding — a separate up-front flow
+
+This is the "whole other approach": for a codebase that already exists, you don't start at
+`/speckit-constitution` — you run the **brownfield** extension first. It analyses the real code,
+generates a tailored constitution + templates, validates them against reality, and
+reverse-engineers specs for features that were built before SDD. Only then do you enter the main
+loop (at `/speckit-specify`) for new work.
+
+```mermaid
+flowchart TD
+    B0([★ existing codebase · after `specify init`]):::entry --> B1
+    B1["/speckit.brownfield.scan<br/>read-only · profiles stack, architecture, conventions"]:::bf --> B2
+    B2["/speckit.brownfield.bootstrap<br/>► constitution.md · spec/plan/tasks templates · AGENTS.md<br/>shows a diff, merges, asks approval — never blind-overwrites"]:::bf --> B3
+    B3["/speckit.brownfield.validate<br/>read-only · config vs real code, reports drift"]:::bf --> QB{"drift or gaps?"}:::branch
+    QB -->|"yes — re-bootstrap"| B2
+    QB -->|no| B4
+    B4["/speckit.brownfield.migrate<br/>► specs/&lt;feature&gt;/{spec,plan,tasks}.md  ·  status: migrated<br/>reverse-engineers existing features, one at a time"]:::bf --> OUT([▶ enter the main flow at /speckit-specify])
+
+    classDef entry fill:#0b3d91,stroke:#06214d,color:#fff;
+    classDef bf fill:#1a7f37,stroke:#0d4f22,color:#fff;
+    classDef branch fill:#d29922,stroke:#7a5800,color:#000;
+```
+
+`scan` and `validate` are read-only; `bootstrap` and `migrate` write files but always show a
+plan/diff and wait for approval. The loop back from *validate* to *bootstrap* is the drift gate —
+re-bootstrap until the generated config matches the actual codebase, then migrate.
 
 ### Clarification: `/speckit-clarify` vs `/speckit-grill`
 
@@ -235,36 +257,44 @@ green-field. A four-command sequence run **before** the normal loop:
 Flow: **scan → bootstrap → validate → migrate**, then you're in the normal §1 loop with a
 constitution and specs that reflect the code you already have.
 
-### superspec — governance, status, and review around the loop
+### superspec — per-step enhancement of clarify / tasks / implement / review
 
-Adds project-governance and resumability commands that wrap the core loop:
+The "Superpowers Bridge". It does **not** run as a parallel end-to-end workflow — it reuses core
+`constitution`/`specify`/`plan` unchanged and *augments four specific steps*, each offered as a
+yes/no prompt via an optional hook at the matching boundary. So in §2.1 superspec appears inside
+the decision diamonds, never as its own lane.
 
-| Command | Does |
-|---|---|
-| `/speckit.superspec.status` | Shows progress and recommends the next action — resume from any interruption |
-| `/speckit.superspec.brainstorm` | Deep edge-case / boundary exploration to refine the spec (iterates with plan) |
-| `/speckit.superspec.tasks` | Phased task breakdown with execution markers |
-| `/speckit.superspec.execute` | TDD-disciplined implementation with subagent coordination |
-| `/speckit.superspec.review` | Verifies the code against spec requirements + acceptance criteria |
+| Command | Augments | Does |
+|---|---|---|
+| `/speckit.superspec.status` | (any time) | Reports progress + recommended next step; resumable across sessions. Writes `.specify/superpowers.yml` |
+| `/speckit.superspec.brainstorm` | the *clarify* step | Deep, iterative edge-case sweep; loops back to *specify* until the spec is solid. Edits `spec.md` in place + appends a Brainstorm Log |
+| `/speckit.superspec.tasks` | `/speckit-tasks` (`after_tasks` hook) | Phased breakdown with execution markers `[P] [TDD] [REVIEW] [SUBAGENT]` |
+| `/speckit.superspec.execute` | `/speckit-implement` (`before_implement` hook) | TDD (RED-GREEN-REFACTOR) + subagent dispatch + checkpoint gates; ticks `tasks.md`, tracks `progress.yml` |
+| `/speckit.superspec.review` | post-implement (`after_implement` hook) | Scores the result against spec + constitution (reports if ≥80); optional `checklist-review.md` |
 
-Its `brainstorm` overlaps in spirit with `/speckit-grill` (both pressure-test the spec) and its
-`execute` with `/speckit-tdd` — superspec leans toward orchestration/governance, the csc
-commands toward depth on a single artifact. Pick whichever fits; don't run both on the same step.
+The mechanism underneath: each command detects whether the matching [obra/superpowers](https://github.com/obra/superpowers)
+skill is installed (`.agents/skills/<skill>/SKILL.md`); if present it follows that skill's
+methodology but redirects I/O to spec-kit artifacts, and if absent it falls back to a lighter
+built-in protocol — superpowers is an optional enhancer, never a hard dependency. Its
+`brainstorm` overlaps with `/speckit-grill` and its `execute` with `/speckit-tdd`; pick one per
+step rather than running both.
 
 ### spec-kit-agent-assign — route tasks to specialized agents
 
-Slots in **after `/speckit-tasks`** and effectively replaces `/speckit-implement` with a
-specialized-execution path: instead of one generalist context building everything, each task
-is routed to the best-fit agent.
+Slots in **after `/speckit-tasks`** as the *implement*-step alternative: instead of one generalist
+context building everything, each task is routed to the best-fit specialized agent. Requires a
+roster of agent definitions in `.claude/agents/*.md` (project) or `~/.claude/agents/*.md` (user);
+if none exist, `assign` bails and recommends plain `/speckit-implement`.
 
 | Command | Produces |
 |---|---|
-| `/speckit.agent-assign.assign` | `agent-assignments.yml` mapping each task → best-fit agent (by path, keywords, context) |
-| `/speckit.agent-assign.validate` | validation report (coverage, agent existence, assignment integrity) |
-| `/speckit.agent-assign.execute` | implements by spawning dedicated subagents for specialized tasks; `default` tasks run inline |
+| `/speckit.agent-assign.assign` | `agent-assignments.yml` — `agents_scanned` + per-task `{agent, reason}`, mapping each task → best-fit agent (by file path, action keywords, story/phase) or `default` |
+| `/speckit.agent-assign.validate` | read-only report — coverage, agent existence, name conflicts, drift, frontmatter validity; PASS/FAIL |
+| `/speckit.agent-assign.execute` | runs the list phase-by-phase: specialized tasks dispatched to their agent, `default` tasks run inline exactly like `/speckit-implement`; `[P]` tasks on different agents run in parallel, same-file tasks serialized |
 
-Flow: **tasks → assign → validate → execute**. Reach for this on larger projects where
-task-level specialization pays off.
+Flow: **tasks → assign → validate → execute** (an optional `after_tasks` hook offers `assign`
+right after task generation). Reach for it on larger projects where per-task specialization and
+cross-agent parallelism pay off.
 
 ---
 
@@ -305,15 +335,16 @@ A representative session for a non-trivial feature:
    resolves the `[NEEDS CLARIFICATION]` and lands in `research.md`/`data-model.md`.
 6. `/speckit-plan` — produce `plan.md`, `research.md`, `data-model.md`.
 7. `/speckit-architecture` — sanity-check for shallow modules before committing to the design.
-8. `/speckit-tasks` — generate `tasks.md`.
-9. `/speckit-implement` + `/speckit-tdd` — build it test-first; each test cites its `FR-###`/`SC`,
-   and completed cycles tick the matching task.
-   *(On a larger project, route tasks to specialized agents instead:
-   `/speckit.agent-assign.assign → validate → execute`.)*
-10. `/speckit-handoff` — when the session ends, compact it into a handoff doc for the next agent.
+8. **Tasks** — `/speckit-tasks` for a plain list, or `/speckit.superspec.tasks` if you want
+   execution markers (`[P]`,`[TDD]`,`[REVIEW]`,`[SUBAGENT]`) to drive a later `superspec.execute`.
+9. **Implement** — pick one approach: `/speckit-implement` (inline), `/speckit-tdd` /
+   `/speckit.superspec.execute` (test-first), or — on a larger project with a roster of
+   specialized agents — `/speckit.agent-assign.assign → validate → execute`.
+10. `/speckit.superspec.review` *(optional)* — score the result against spec + constitution
+    before shipping.
+11. `/speckit-handoff` — when the session ends, compact it into a handoff doc for the next agent.
 
-Not every feature needs every step — `/speckit-grill`, `/speckit-architecture`, and
-`/speckit-prototype` are the ones you add when the stakes or the uncertainty justify them, and
-the brownfield / superspec / agent-assign sub-workflows (§4) come in only when their situation
-applies.
-```
+Not every feature needs every step — the deepening commands (`/speckit-grill`,
+`/speckit-architecture`, `/speckit-prototype`) and the superspec / agent-assign alternatives come
+in only when the stakes, the uncertainty, or the project size justify them. Each ◆ decision in
+§2.1 is independent: you can take the enhanced path at one step and the plain one at the next.
