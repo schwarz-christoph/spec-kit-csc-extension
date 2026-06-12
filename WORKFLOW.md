@@ -72,68 +72,89 @@ these phases with deeper, less-bounded tooling.
 
 ---
 
-## 2. Where everything slots in
+## 2. The workflow, end to end
 
-Read this as the core spec-kit spine (blue) with the seven csc commands (purple) hung off the
-phases they augment, plus the three bundled extensions: **brownfield** (green) onboarding an
-existing codebase *before* the loop, **agent-assign** (orange) swapping in for the execution
-phase, and **superspec** (gold) as a governance track wrapping the whole thing. The diagram
-renders on GitHub; details for each command are in §3 (csc) and §4 (bundled extensions).
+There is **one linear happy path** down the middle. Everything else is either an *entry point*
+(★ — where you join the path) or a *branch* (⑂ — an optional detour you can take or skip and
+then return to the path). Read the line first, then the flow diagram below it.
+
+### The linear path
+
+```
+★ START (green-field) ─┐
+                       ▼
+★ START (existing code) ─► brownfield: scan → bootstrap → validate → migrate ─┐
+                       ┌──────────────────────────────────────────────────────┘
+                       ▼
+1.  /speckit-constitution
+2.  /speckit-specify          ► spec.md        ⑂ deepen?  /speckit-grill · /speckit-prototype
+3.  /speckit-clarify          (≤5 questions)
+4.  /speckit-plan             ► plan.md · research.md · data-model.md
+                                               ⑂ deepen?  /speckit-grill · /speckit-architecture
+5.  /speckit-tasks            ► tasks.md       ⑂ build how? ── standard ──► step 6
+                                                            └ specialized ─► agent-assign
+6.  /speckit-implement                         ⑂ test-first? /speckit-tdd
+    ▼
+✓ feature shipped
+```
+
+- **★ Where you can start:** green-field projects begin at step 1; an existing codebase starts
+  with the **brownfield** sequence, which reverse-engineers a constitution + specs and drops
+  you onto step 1.
+- **⑂ Where you can branch:** after *specify* and after *plan* you may take a deepening detour
+  (grill / prototype / architecture) and return; at *tasks* you choose standard
+  `/speckit-implement` **or** **agent-assign** specialized execution; during *implement* you can
+  drive it test-first with `/speckit-tdd`.
+- **Always available (not on the path):** `/speckit-caveman`, `/speckit-handoff`,
+  `/speckit-teach`, and the **superspec** governance track (status / brainstorm / review) can be
+  invoked at any point.
+
+### Flow diagram
+
+The main path is blue and runs straight down; orange diamonds are branch points; purple is csc;
+green is brownfield; the gold/grey boxes are always-available side tracks. Renders on GitHub.
 
 ```mermaid
 flowchart TD
-    %% ---------- brownfield: onboard an existing codebase, before the loop ----------
-    subgraph BF["brownfield · onboard an existing codebase (optional, runs first)"]
-        direction LR
-        bf1["/speckit.brownfield.scan"] --> bf2["/speckit.brownfield.bootstrap"] --> bf3["/speckit.brownfield.validate"] --> bf4["/speckit.brownfield.migrate"]
-    end
+    %% ===== entry points =====
+    G([★ START · green-field]):::entry
+    E([★ START · existing codebase]):::entry
 
-    %% ---------- core spec-kit spine ----------
-    C["/speckit-constitution"] --> S["/speckit-specify<br/>► spec.md"]
-    S --> CL["/speckit-clarify<br/>bounded, ≤5 questions"]
-    CL --> P["/speckit-plan<br/>► plan.md · research.md · data-model.md"]
-    P --> T["/speckit-tasks<br/>► tasks.md"]
-    T --> IMPL["/speckit-implement<br/>► the code"]
+    %% ===== brownfield onboarding (existing codebases only) =====
+    E --> BF["brownfield · scan → bootstrap → validate → migrate"]:::bf
+    BF -->|reverse-engineered constitution + specs| C
 
-    BF -.->|reverse-engineered constitution + specs| C
+    %% ===== linear happy path =====
+    G --> C
+    C["1 · /speckit-constitution"]:::core --> S["2 · /speckit-specify ► spec.md"]:::core
+    S --> b1{"⑂ deepen the spec?"}:::branch
+    b1 -->|grill / prototype| D1["/speckit-grill · /speckit-prototype"]:::csc --> CL
+    b1 -->|skip| CL
+    CL["3 · /speckit-clarify · ≤5 questions"]:::core --> P["4 · /speckit-plan ► plan.md · research.md · data-model.md"]:::core
+    P --> b2{"⑂ deepen the plan?"}:::branch
+    b2 -->|grill / architecture| D2["/speckit-grill · /speckit-architecture"]:::csc --> T
+    b2 -->|skip| T
+    T["5 · /speckit-tasks ► tasks.md"]:::core --> b3{"⑂ build how?"}:::branch
+    b3 -->|standard| IMPL["6 · /speckit-implement"]:::core
+    b3 -->|specialized, larger projects| AA["agent-assign · assign → validate → execute"]:::aa
+    IMPL --> b4{"⑂ test-first?"}:::branch
+    b4 -->|yes| TDD["/speckit-tdd · red-green-refactor (FR-### / scenarios)"]:::csc --> DONE
+    b4 -->|no| DONE
+    AA --> DONE
+    DONE([✓ feature shipped]):::entry
 
-    %% ---------- csc commands hung off the phases ----------
-    S -.-> grill1["/speckit-grill<br/>adversarial stress-test of the spec (unbounded)"]
-    S -.-> proto["/speckit-prototype<br/>throwaway to answer an open [NEEDS CLARIFICATION]"]
-    P -.-> grill2["/speckit-grill<br/>now challenges the plan vs constitution + code"]
-    P -.-> arch["/speckit-architecture<br/>codebase-wide deepening review (HTML report)"]
-    IMPL -.-> tdd["/speckit-tdd<br/>red-green-refactor driven by Acceptance Scenarios + FR-###"]
+    %% ===== always-available side tracks (not on the path) =====
+    UTIL["any time · /speckit-caveman · /speckit-handoff · /speckit-teach"]:::util
+    SS["alternative track · superspec · status · brainstorm · tasks · execute · review"]:::ss
 
-    %% ---------- agent-assign: specialized execution, replaces /speckit-implement ----------
-    subgraph AA["agent-assign · specialized execution (replaces /speckit-implement on larger projects)"]
-        direction LR
-        aa1["/speckit.agent-assign.assign<br/>► agent-assignments.yml"] --> aa2["/speckit.agent-assign.validate"] --> aa3["/speckit.agent-assign.execute"]
-    end
-    T -.->|larger projects| AA
-
-    %% ---------- superspec: governance track wrapping the loop ----------
-    subgraph SS["superspec · governance + resumability around the loop"]
-        direction LR
-        ss1["/speckit.superspec.status"] --- ss2["/speckit.superspec.brainstorm"] --- ss3["/speckit.superspec.tasks"] --- ss4["/speckit.superspec.execute"] --- ss5["/speckit.superspec.review"]
-    end
-    SS -.->|alternative governance / execution track| P
-
-    %% ---------- session-wide csc utilities ----------
-    UTIL["any time · /speckit-caveman (compress) · /speckit-handoff (hand off) · /speckit-teach (teaching workspace)"]
-
+    classDef entry fill:#0b3d91,stroke:#06214d,color:#fff;
     classDef core fill:#1f6feb,stroke:#0b3d91,color:#fff;
     classDef csc fill:#8957e5,stroke:#4c2889,color:#fff;
     classDef bf fill:#1a7f37,stroke:#0d4f22,color:#fff;
     classDef aa fill:#bf4b00,stroke:#7a3000,color:#fff;
     classDef ss fill:#9a6700,stroke:#5c3d00,color:#fff;
+    classDef branch fill:#d29922,stroke:#7a5800,color:#000;
     classDef util fill:#444c56,stroke:#22272e,color:#fff;
-
-    class C,S,CL,P,T,IMPL core;
-    class grill1,grill2,proto,arch,tdd csc;
-    class bf1,bf2,bf3,bf4 bf;
-    class aa1,aa2,aa3 aa;
-    class ss1,ss2,ss3,ss4,ss5 ss;
-    class UTIL util;
 ```
 
 ### Clarification: `/speckit-clarify` vs `/speckit-grill`
