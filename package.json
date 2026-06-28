@@ -16,8 +16,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "prepare": "tsc"
+    "compile": "tsc"
   },
   "engines": {
     "node": ">=18"

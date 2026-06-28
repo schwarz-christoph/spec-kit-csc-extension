@@ -55,7 +55,7 @@ wrapped into `.agents/skills/<name>/SKILL.md` entries automatically. Claude plug
 too: the skill dirs declared in `.claude-plugin/plugin.json` (fallback: every
 `.claude/skills/<name>/` with a `SKILL.md`) are installed, with symlinked `data`/`scripts`
 assets materialised into real files. Run `csc --help` for the full
-reference. CLI sources live in [`src/`](src/); build with `npm install && npm run build`.
+reference. CLI sources live in [`src/`](src/); build with `npm install && npm run compile`.
 
 ## Commands
 
